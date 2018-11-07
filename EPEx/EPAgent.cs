@@ -32,9 +32,8 @@ namespace EP
         {
             try
             {
-                Queue<Node> nQueue = new Queue<Node>();
+                List<Node> nQueue = new List<Node>();
                 List<Node> nList = new List<Node>();
-
                 Node n = new Node
                 {
                     Info = initState,
@@ -42,11 +41,13 @@ namespace EP
                     Visited = true
                 };
 
-                nQueue.Enqueue(n);
+                nQueue.Add(n);
 
                 do
                 {
-                    n = nQueue.Dequeue();
+                    nQueue = nQueue.OrderBy(x => x.Nivel).ToList();
+                    n = nQueue[0];
+                    nQueue.Remove(n);
                     GetSucessors(ref n);
 
                     if (TargetFound(n))
@@ -58,9 +59,11 @@ namespace EP
                     {
                         if (e.To.Visited != true)
                         {
+                            e.To.Nivel = Heuristic((int[])n.Info);
                             e.To.Visited = true;
                             e.To.Parent = n;
-                            nQueue.Enqueue(e.To);
+                            
+                            nQueue.Add(e.To);
                         }
                     }
 
@@ -76,6 +79,126 @@ namespace EP
 
         #endregion
 
+        #region Heuristic
+    
+        private double Heuristic(int[] array)
+        {
+            int indexTarget,
+                square = Convert.ToInt32(Math.Sqrt(array.Length));
+
+            double pythagoras = 0;
+
+            int?[] position, positionTarget;
+
+
+            for (int i = 0; i < array.Length; i++)
+            {
+                indexTarget = GetIndexOf(target, array[i]);
+
+                position = GetPosition(i, square);
+                positionTarget = GetPosition(indexTarget, square);
+
+                pythagoras += Pythagoras(position, positionTarget);
+            }
+
+            return pythagoras;
+        }
+
+        private double Pythagoras(int?[] p, int?[] pT)
+        {
+            int a = 0, b = 0, i = 1;
+            double c = 0;
+
+            a = (int)(p[0] - pT[0]);
+            b = (int)(p[1] - pT[1]);
+
+            a = (a < 0) ? a * -1 : a;
+            b = (b < 0) ? b * -1 : b;
+
+            if (a == 0)
+                return b;
+            if (b == 0)
+                return a;
+
+            a = a * a;
+            b = b * b;
+
+            c = Math.Sqrt(a + b);
+
+            return c;
+        }
+
+        private int?[] GetPosition(int index, int square)
+        {
+            int?[] position = { null, null };
+            int count = 0, start = 0;
+
+            position[0] = index / square;
+            do
+            {
+                for (int i = start; i < square + start; i++)
+                {
+
+                    if (count == index)
+                    {
+                        position[1] = count;
+                        break;
+                    }
+                    count++;
+                }
+
+                start += square;
+            } while (position[1] == null);
+
+            return position;
+        }
+
+        #endregion
+
+        #region ShortestPath
+
+        public List<Node> ShortestPath(string begin, string end)
+        {
+            List<Node> nQueue = new List<Node>();
+            List<Node> nList = new List<Node>();
+
+            Node node = Find(begin);
+            node.Nivel = 0;
+            nQueue.Add(node);
+
+            while (nQueue.Count > 0)
+            {
+                nQueue = nQueue.OrderBy(x => x.Nivel).ToList();
+                node = nQueue[0];
+                nQueue.Remove(node);
+                if (node.Visited != true)
+                {
+                    node.Visited = true;
+                    nList.Add(node);
+
+                    if (node.Name == end)
+                    {
+                        return nList;
+                    }
+
+                    foreach (Edge e in node.Edges)
+                    {
+                        if (e.To.Visited != true)
+                        {
+                            e.To.Parent = node;
+                            e.To.Nivel = node.Nivel + e.Cost;
+
+                            nQueue.Add(e.To);
+                        }
+                    }
+                }
+            }
+
+            return nList;
+        }
+
+        #endregion
+
         #region GetSucessors
 
         private void GetSucessors(ref Node n)
@@ -84,7 +207,7 @@ namespace EP
             {
                 List<Node> nList = new List<Node>();
                 int plus = 0,
-                    indexFrom = GetIndexOfZero(n),
+                    indexFrom = GetIndexOf(n),
                     square = Convert.ToInt32(Math.Sqrt(((int[])(n.Info)).Length));
 
                 for (int i = 0; i < 4; i++)
@@ -180,7 +303,7 @@ namespace EP
 
         #endregion
 
-        #region Métodos Ajudantes
+        #region MÃ©todos Ajudantes
 
         private int GetDifferenceSequence(Node n1, Node n2)
         {
@@ -201,7 +324,9 @@ namespace EP
             ((int[])(n.Info))[index2] = help;
         }
 
-        private int GetIndexOfZero(Node n)
+        #region GetIndex
+
+        private int GetIndexOf(Node n)
         {
             for (int i = 0; i < ((int[])(n.Info)).Length; i++)
             {
@@ -213,6 +338,21 @@ namespace EP
 
             return 0;
         }
+
+        private int GetIndexOf(int[] array, int value)
+        {
+            for (int i = 0; i < array.Length; i++)
+            {
+                if (array[i] == value)
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        #endregion
 
         private bool ExistBoard(int index, int square, int board)
         {
@@ -229,7 +369,7 @@ namespace EP
 
         //private bool ExistNode(Node n)
         //{
-        //    foreach (var nHelp in Nodes)
+        //    foreach (var nHelp in this.nodes)
         //    {
         //        if (nHelp.Info == n.Info)
         //        {
