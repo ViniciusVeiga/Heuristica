@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -35,7 +35,7 @@ namespace ProjetoGrafos.DataStructure
         /// </summary>
         public List<Edge> Edges { get; private set; }
 
-        public int Nivel { get; set; }
+        public double Nivel { get; set; }
 
         #endregion
 
